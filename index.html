@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EnviroMart - Eco-Friendly Webstore</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="ecocoursework.css">
+    <script src="product.js"></script>
+    <script defer src="https://static.getbutton.io/widget/bundle.js?id=3Fmax"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Welcome Popup for New Visitors -->
+        <div class="welcome-popup" v-if="showWelcomePopup && !currentUser">
+            <div class="popup-content">
+                <button class="close-popup" @click="closeWelcomePopup">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="popup-header">
+                    <i class="fas fa-leaf"></i>
+                    <h2>Welcome to EnviroMart!</h2>
+                </div>
+                <p>Join our eco-friendly community to access all features:</p>
+                <ul>
+                    <li><i class="fas fa-check-circle"></i> Track your sustainability impact</li>
+                    <li><i class="fas fa-check-circle"></i> Participate in eco-challenges</li>
+                    <li><i class="fas fa-check-circle"></i> Save your favorite products</li>
+                </ul>
+                <div class="popup-buttons">
+                    <button class="popup-login-btn" @click="showPage('login')">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+                    <button class="popup-signup-btn" @click="showPage('register')">
+                        <i class="fas fa-user-plus"></i> Sign Up
+                    </button>
+                </div>
+                <p class="continue-guest" @click="closeWelcomePopup">
+                    Continue as guest <i class="fas fa-arrow-right"></i>
+                </p>
+            </div>
+        </div>
+
+        <!-- Error Popup -->
+        <div v-if="errorPopup.visible" class="error-popup">
+            <div class="popup-content">
+                <button class="close-popup" @click="closeErrorPopup">
+                    <i class="fas fa-times"></i>
+                </button>
+                <h3>{{ errorPopup.title }}</h3>
+                <p>{{ errorPopup.message }}</p>
+            </div>
+        </div>
+
+        <!-- Confirmation Popup -->
+        <div v-if="confirmationMessage" class="confirmation-popup">
+            <div class="popup-content">
+                <h3>Order Confirmation</h3>
+                <p>{{ confirmationMessage }}</p>
+                <button @click="confirmationMessage = ''">Close</button>
+            </div>
+        </div>
+
+        <!-- Account Sidebar -->
+        <div class="account-sidebar" :class="{ open: accountSidebarOpen }">
+            <div class="sidebar-header">
+                <h3 v-if="currentUser">My Account</h3>
+                <h3 v-else>Welcome</h3>
+                <button class="sidebar-close" @click="accountSidebarOpen = false">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="sidebar-content">
+                <div v-if="currentUser">
+                    <!-- Account Details -->
+                    <div class="user-profile">
+                        <div class="user-avatar">
+                            {{ currentUser.username.charAt(0).toUpperCase() }}
+                        </div>
+                        <div class="user-info">
+                            <h4>{{ currentUser.username }}</h4>
+                            <p>{{ currentUser.email }}</p>
+                        </div>
+                    </div>
+                    <div class="sidebar-section">
+                        <h4>Account</h4>
+                        <a href="#" class="sidebar-link">
+                            <i class="fas fa-user"></i> My Profile
+                        </a>
+                        <a href="#" class="sidebar-link">
+                            <i class="fas fa-shopping-bag"></i> My Orders
+                        </a>
+                        <a href="#" class="sidebar-link">
+                            <i class="fas fa-heart"></i> Wishlist
+                        </a>
+                        <button class="sidebar-logout" @click="logout">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                    </div>
+                </div>
+                <div v-else>
+                    <!-- Login/Signup Options -->
+                    <div class="sidebar-section">
+                        <button class="sidebar-auth-btn" @click="showPage('login')">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </button>
+                        <button class="sidebar-auth-btn signup" @click="showPage('register')">
+                            <i class="fas fa-user-plus"></i> Sign Up
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Header -->
+        <header class="main-header" style="background-image: url('public/x.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat;">
+            <div class="header-content">
+                <h1 class="logo">EnviroMart</h1>
+                <div class="header-boxes">
+                    <button class="header-box">BUY A BUNCH</button>
+                    <button class="header-box">GIVE A BUNCH</button>
+                    <button class="header-box">Help Society</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Bar -->
+        <nav class="main-nav">
+            <div class="nav-left">
+                <button class="nav-item active" @click="showPage('home')">
+                    <i class="fas fa-home"></i> Home
+                </button>
+                <button class="nav-item" @click="showPage('products')">
+                    <i class="fas fa-shopping-bag"></i> Products
+                </button>
+                <button class="nav-item" @click="showPage('about')">
+                    <i class="fas fa-info-circle"></i> About
+                </button>
+                <button class="nav-item" @click="showPage('challenges')">
+                    <i class="fas fa-trophy"></i> Challenges
+                </button>
+            </div>
+            <div class="nav-right">
+                <div class="search-container">
+                    <input 
+                        type="text" 
+                        placeholder="Search eco-products..." 
+                        class="search-bar" 
+                        v-model="searchQuery" 
+                        @keyup.enter="performSearch"
+                    >
+                    <i class="fas fa-search" @click="performSearch"></i>
+                </div>
+                <button class="cart-btn" @click="goToCheckout">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span v-if="cartItemCount > 0" class="cart-count">{{ cartItemCount }}</span>
+                </button>
+                <button class="user-btn" @click="goToAccount">
+                    <i class="fas fa-user"></i>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main>
+            <!-- Login Page -->
+            <div v-if="currentPage === 'login'" class="auth-page">
+                <div class="auth-container">
+                    <div class="auth-header">
+                        <i class="fas fa-leaf"></i>
+                        <h2>Welcome Back!</h2>
+                    </div>
+                    <form @submit.prevent="login">
+                        <div class="form-group">
+                            <label for="login-email">Email</label>
+                            <input type="email" id="login-email" v-model="loginForm.email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="login-password">Password</label>
+                            <div class="password-container">
+                                <input :type="showPassword ? 'text' : 'password'" id="login-password" v-model="loginForm.password" required>
+                                <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" @click="togglePasswordVisibility"></i>
+                            </div>
+                        </div>
+                        <button type="submit" class="auth-button">Login</button>
+                        <p class="auth-switch">
+                            New to EnviroMart? <a @click="showPage('register')">Create account</a>
+                        </p>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Register Page -->
+            <div v-if="currentPage === 'register'" class="auth-page">
+                <div class="auth-container">
+                    <div class="auth-header">
+                        <i class="fas fa-user-plus"></i>
+                        <h2>Join EnviroMart</h2>
+                    </div>
+                    <form @submit.prevent="register">
+                        <div class="form-group">
+                            <label for="reg-username">Username</label>
+                            <input type="text" id="reg-username" v-model="registerForm.username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="reg-email">Email</label>
+                            <input type="email" id="reg-email" v-model="registerForm.email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="reg-password">Password</label>
+                            <div class="password-container">
+                                <input :type="showPassword ? 'text' : 'password'" id="reg-password" v-model="registerForm.password" required>
+                                <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" @click="togglePasswordVisibility"></i>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="reg-confirm-password">Confirm Password</label>
+                            <div class="password-container">
+                                <input :type="showConfirmPassword ? 'text' : 'password'" id="reg-confirm-password" v-model="registerForm.confirmPassword" required>
+                                <i :class="showConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" @click="toggleConfirmPasswordVisibility"></i>
+                            </div>
+                        </div>
+                        <button type="submit" class="auth-button">Register</button>
+                        <p class="auth-switch">
+                            Already have an account? <a @click="showPage('login')">Login</a>
+                        </p>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Home Page -->
+            <div v-if="currentPage === 'home'" class="home-page">
+                <h2>Welcome to EnviroMart</h2>
+                <p>Your destination for eco-friendly and sustainable living...</p>
+                
+                <!-- Impact Dashboard -->
+                <div class="impact-dashboard">
+                    <h2 class="impact-dashboard-title">Your Sustainability Impact</h2>
+                    <div class="impact-metrics">
+                        <div class="metric">
+                            <i class="fas fa-recycle"></i>
+                            <span class="value">{{ totalImpact.plasticReduced.toFixed(2) }} kg</span>
+                            <span class="label">Plastic Reduced</span>
+                        </div>
+                        <div class="metric">
+                            <i class="fas fa-cloud"></i>
+                            <span class="value">{{ totalImpact.co2Saved.toFixed(2) }} kg</span>
+                            <span class="label">CO₂ Saved</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Special Offers -->
+                <h2 class="special-offers-title">Special Offers</h2>
+                <div class="special-offers">
+                    <div class="offer-card">
+                        <h3>Free Shipping</h3>
+                        <p>Free shipping on orders over $50</p>
+                        <p>Use code: <strong>FREESHIP50</strong></p>
+                    </div>
+                    <div class="offer-card">
+                        <h3>10% Off</h3>
+                        <p>Get 10% off your first order</p>
+                        <p>Use code: <strong>WELCOME10</strong></p>
+                    </div>
+                </div>
+
+                <!-- Recommended Products -->
+                <h2>Recommended for You</h2>
+                <div class="product-container">
+                    <div v-for="product in recommendedProducts" :key="product.id" class="product-card" @click="goToProductPage(product)">
+                        <img :src="product.image" :alt="product.title">
+                        <p>{{ product.title }}</p>
+                    </div>
+                </div>
+
+                <!-- Eco Tip -->
+                <h2>Eco-Friendly Tip</h2>
+                <div class="eco-tip-box">
+                    <i class="fas fa-lightbulb"></i>
+                    <p>{{ ecoTip }}</p>
+                </div>
+
+                <!-- Slideshow -->
+                <div class="slideshow">
+                    <div class="slides">
+                        <img :src="currentSlide" alt="Slideshow Image" class="slide-image" 
+                             :class="{ active: currentSlideIndex === index }" 
+                             v-for="(slide, index) in slides" :key="index">
+                    </div>
+                    <button @click="prevSlide" class="slide-button prev">&#10094;</button>
+                    <button @click="nextSlide" class="slide-button next">&#10095;</button>
+                </div>
+
+                <!-- Surprise Me Button -->
+                <button class="surprise-btn" @click="surpriseMe">Surprise Me!</button>
+
+                <!-- Write General Review Button -->
+                <button class="write-review-btn" @click="goToReviewPage()">Write a General Review</button>
+            </div>
+
+            <!-- Products Page -->
+            <div v-if="currentPage === 'products'" class="products-page">
+                <div class="sorting-options">
+                    <label for="sort">Sort by:</label>
+                    <select v-model="sortBy">
+                        <option value="title">Product Name</option>
+                        <option value="price">Price</option>
+                        <option value="sustainabilityRating">Sustainability Rating</option>
+                    </select>
+
+                    <label for="direction">Direction:</label>
+                    <select v-model="sortDirection">
+                        <option value="asc">Ascending</option>
+                        <option value="desc">Descending</option>
+                    </select>
+                </div>
+
+                <div class="product-grid">
+                    <!-- Product Card -->
+                    <div v-for="product in sortedProducts()" 
+                         class="product" 
+                         :key="product.id" 
+                         @click="goToProductPage(product)">
+                        <figure>
+                            <img :src="product.image" alt="Product Image">
+                        </figure>
+                        <h2>{{ product.title }}</h2>
+                        <p>{{ product.description }}</p>
+                        <p><strong>Sustainability Rating:</strong> 
+                           <span class="rating-stars">
+                               <span v-for="n in 5" :key="n" 
+                                     :class="{ 'filled': n <= product.sustainabilityRating }">★</span>
+                           </span>
+                        </p>
+                        <p class="price">${{ product.price }}</p>
+                        <p class="stock" :class="{ 'low': product.availableInventory - cartCount(product.id) < 5 }">
+                            {{ getStockStatus(product) }}
+                        </p>
+                        <button @click.stop="addToCart(product)" :disabled="!canAddToCart(product)">
+                            {{ getAddToCartText(product) }}
+                        </button>
+                        <button @click.stop="addToCompare(product)" class="compare-btn">
+                            <i class="fas fa-balance-scale"></i> Compare
+                        </button>
+
+                        <!-- Write Product-Specific Review Button -->
+                        <button class="write-review-btn" @click="goToReviewPage(product.id)">
+                            Write a Review
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Comparison Table -->
+                <div v-if="compareList.length > 0" class="comparison-section">
+                    <h3>Product Comparison</h3>
+                    <table class="compare-table">
+                        <thead>
+                            <tr>
+                                <th>Feature</th>
+                                <th v-for="product in compareList" :key="product.id">{{ product.title }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Price</td>
+                                <td v-for="product in compareList" :key="product.id">${{ product.price }}</td>
+                            </tr>
+                            <tr>
+                                <td>Rating</td>
+                                <td v-for="product in compareList" :key="product.id">{{ product.sustainabilityRating }} ★</td>
+                            </tr>
+                            <tr>
+                                <td>Description</td>
+                                <td v-for="product in compareList" :key="product.id">{{ product.description }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <button @click="clearComparison" class="clear-comparison-btn">Clear Comparison</button>
+                </div>
+            </div>
+
+            <!-- Product Detail Page -->
+            <div v-if="currentPage === 'product-detail'" class="product-detail-page">
+                <div class="product-detail-container" v-if="selectedProduct">
+                    <div class="product-detail-left">
+                        <img :src="selectedProduct.image" :alt="selectedProduct.title" class="product-detail-image">
+                    </div>
+                    <div class="product-detail-right">
+                        <h2>{{ selectedProduct.title }}</h2>
+                        <div class="sustainability-rating">
+                            <span>Sustainability Rating:</span>
+                            <span class="rating-stars">
+                                <span v-for="n in 5" :key="n" 
+                                      :class="{ 'filled': n <= selectedProduct.sustainabilityRating }">★</span>
+                            </span>
+                        </div>
+                        <p class="product-price">${{ selectedProduct.price }}</p>
+                        <p class="product-description">{{ selectedProduct.description }}</p>
+                        <div class="eco-impact">
+                            <h3>Environmental Impact</h3>
+                            <p><i class="fas fa-leaf"></i> CO₂ Saved: {{ selectedProduct.co2Saved }}kg</p>
+                            <p><i class="fas fa-recycle"></i> Plastic Reduced: {{ selectedProduct.plasticReduced }}kg</p>
+                        </div>
+                        <div class="stock-status" :class="{ 'low': selectedProduct.availableInventory < 5 }">
+                            {{ getStockStatus(selectedProduct) }}
+                        </div>
+                        <button class="add-to-cart-btn" 
+                                @click="addToCart(selectedProduct)"
+                                :disabled="!canAddToCart(selectedProduct)">
+                            {{ getAddToCartText(selectedProduct) }}
+                        </button>
+                        <button class="back-to-products" @click="showPage('products')">
+                            <i class="fas fa-arrow-left"></i> Back to Products
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Review Page -->
+            <div v-if="currentPage === 'review'" class="review-page">
+                <div class="review-container">
+                    <h2 v-if="selectedProduct">Write a Review for {{ selectedProduct.title }}</h2>
+                    <h2 v-else>Write a General Review</h2>
+                    <form @submit.prevent="submitReview(selectedProduct?.id)">
+                        <div class="form-group">
+                            <label for="review-comment">Your Review</label>
+                            <textarea id="review-comment" v-model="newReview.comment" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="review-rating">Rating</label>
+                            <div class="rating-stars">
+                                <span v-for="n in 5" :key="n" 
+                                      :class="{ 'filled': n <= newReview.rating }" 
+                                      @click="newReview.rating = n">★</span>
+                            </div>
+                        </div>
+                        <button type="submit" class="submit-review-btn">Submit Review</button>
+                        <button type="button" class="back-to-products" @click="showPage('products')">
+                            <i class="fas fa-arrow-left"></i> Back to Products
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- About Page -->
+            <div v-if="currentPage === 'about'" class="about-page">
+                <h2>About EnviroMart</h2>
+                <p>We're dedicated to promoting sustainability...</p>
+                <div class="about-features">
+                    <div class="feature">
+                        <i class="fas fa-check-circle"></i>
+                        <h3>Verified Products</h3>
+                        <p>All items meet strict eco-friendly standards</p>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-seedling"></i>
+                        <h3>Sustainable Sourcing</h3>
+                        <p>Ethically sourced from responsible suppliers</p>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-recycle"></i>
+                        <h3>Circular Economy</h3>
+                        <p>Products designed for reuse and recycling</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Challenges Page -->
+            <div v-if="currentPage === 'challenges'" class="challenges-page">
+                <h2>Eco-Challenges</h2>
+                <div class="challenges-container">
+                    <div v-for="challenge in challenges" :key="challenge.id" class="challenge-card">
+                        <h3>{{ challenge.title }}</h3>
+                        <p>{{ challenge.description }}</p>
+                        <div class="progress-container">
+                            <div class="progress-bar" :style="{ width: challenge.progress + '%' }"></div>
+                        </div>
+                        <p class="progress-text">{{ challenge.progress }}% Completed</p>
+                        <button @click="toggleChallenge(challenge.id)" 
+                                :class="{ 'joined': challenge.joined }">
+                            {{ challenge.joined ? 'Leave Challenge' : 'Join Challenge' }}
+                        </button>
+                    </div>
+                </div>
+
+                <div class="community-impact">
+                    <h3>Community Impact</h3>
+                    <div class="impact-metrics">
+                        <div class="metric">
+                            <i class="fas fa-tree"></i>
+                            <span class="value">{{ communityImpact.treesPlanted }}</span>
+                            <span class="label">Trees Planted</span>
+                        </div>
+                        <div class="metric">
+                            <i class="fas fa-cloud"></i>
+                            <span class="value">{{ communityImpact.co2Saved }} kg</span>
+                            <span class="label">CO₂ Saved</span>
+                        </div>
+                        <div class="metric">
+                            <i class="fas fa-recycle"></i>
+                            <span class="value">{{ communityImpact.plasticReduced }} kg</span>
+                            <span class="label">Plastic Reduced</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Checkout Section -->
+            <div v-if="currentPage === 'checkout'" class="auth-page">
+                <div class="auth-container">
+                    <div class="auth-header">
+                        <i class="fas fa-shopping-cart"></i>
+                        <h2>Checkout</h2>
+                    </div>
+                    <div v-if="cart.length > 0">
+                        <h3>Items in Cart:</h3>
+                        <ul class="cart-items">
+                            <li v-for="product in cart" :key="product.id" class="cart-item">
+                                <img :src="product.image" alt="Product Image" class="item-image">
+                                <div class="item-details">
+                                    <h4>{{ product.title }}</h4>
+                                    <p>${{ product.price }}</p>
+                                </div>
+                            </li>
+                        </ul>
+                        <p class="summary-row total">Subtotal: ${{ calculateTotal() }}</p>
+
+                        <!-- Shipping Information -->
+                        <h3>Shipping Information</h3>
+                        <div class="form-group">
+                            <label for="firstName">First Name</label>
+                            <input type="text" id="firstName" v-model="order.firstName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="lastName">Last Name</label>
+                            <input type="text" id="lastName" v-model="order.lastName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="address">Address</label>
+                            <input type="text" id="address" v-model="order.address" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="city">City</label>
+                            <input type="text" id="city" v-model="order.city" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="zip">Zip Code</label>
+                            <input type="text" id="zip" v-model="order.zip" required>
+                        </div>
+
+                        <!-- Payment Method -->
+                        <h3>Payment Method</h3>
+                        <div class="form-group">
+                            <label for="paymentMethod">Select Payment Method:</label>
+                            <select id="paymentMethod" v-model="paymentMethod" required>
+                                <option value="credit">Credit Card</option>
+                                <option value="paypal">PayPal</option>
+                            </select>
+                        </div>
+
+                        <button @click="submitOrder" class="auth-button">Submit Order</button>
+                    </div>
+                    <div v-else>
+                        <p>Your cart is empty.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Chatbot -->
+        <div class="chatbot-container" :class="{ open: chatbotOpen }">
+            <div class="chatbot-header">
+                <h3>Eco Assistant</h3>
+                <button @click="chatbotOpen = false" class="close-chatbot">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="chatbot-messages">
+                <div v-for="(msg, index) in chatMessages" :key="index" 
+                     :class="['message', msg.sender]">
+                    <div class="message-content">
+                        {{ msg.text }}
+                    </div>
+                </div>
+            </div>
+            <div class="chatbot-input">
+                <input type="text" v-model="chatMessage" @keyup.enter="sendChatMessage" 
+                       placeholder="Ask about sustainability...">
+                <button @click="sendChatMessage">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+        <button @click="toggleChatbot" class="chatbot-toggle">
+            <i class="fas fa-comment-dots"></i>
+        </button>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>About EnviroMart</h3>
+                <p>Your one-stop shop for eco-friendly and sustainable products. Making the world greener, one purchase at a time.</p>
+                <div class="social-links">
+                    <a href="#"><i class="fab fa-facebook"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                </div>
+            </div>
+
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a @click="showPage('home')">Home</a></li>
+                    <li><a @click="showPage('products')">Shop</a></li>
+                    <li><a @click="showPage('about')">About Us</a></li>
+                    <li><a @click="showPage('challenges')">Eco Challenges</a></li>
+                    <li><a href="#">Blog</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h3>Customer Service</h3>
+                <ul>
+                    <li><a href="#">Contact Us</a></li>
+                    <li><a href="#">Shipping Policy</a></li>
+                    <li><a href="#">Returns & Exchanges</a></li>
+                    <li><a href="#">FAQs</a></li>
+                    <li><a href="#">Privacy Policy</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h3>Newsletter</h3>
+                <p>Subscribe to receive updates, access to exclusive deals, and more.</p>
+                <div class="newsletter-form">
+                    <input type="email" placeholder="Enter your email">
+                    <button><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; {{ new Date().getFullYear() }} EnviroMart. All rights reserved.</p>
+            <div class="payment-methods">
+                <i class="fab fa-cc-visa"></i>
+                <i class="fab fa-cc-mastercard"></i>
+                <i class="fab fa-cc-amex"></i>
+                <i class="fab fa-cc-paypal"></i>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        var webstore = new Vue({
+            el: '#app',
+            data: {
+                currentPage: 'home',
+                currentUser: null,
+                sidebarOpen: false,
+                accountSidebarOpen: false, // Sidebar state
+                showWelcomePopup: false,
+                chatbotOpen: false,
+                chatMessage: '',
+                chatMessages: [
+                    { sender: 'bot', text: "Hi there! I'm your Eco Assistant. How can I help you today?" }
+                ],
+                loginForm: { email: '', password: '' }, // Updated key from username to email
+                registerForm: { username: '', email: '', password: '', confirmPassword: '' },
+                searchQuery: '',
+                order: { firstName: '', lastName: '', address: '', city: '', zip: '' },
+                shipping: {
+                    address: '',
+                    city: '',
+                    zip: '',
+                    country: ''
+                },
+                paymentMethod: '',
+                payment: {
+                    cardNumber: '',
+                    expiry: '',
+                    cvv: ''
+                },
+                products: products, // From product.js
+                cart: [],
+                sortBy: 'title',
+                sortDirection: 'asc',
+                confirmationMessage: '',
+                recommendedProducts: [],
+                ecoTip: "Switch to reusable bags instead of plastic ones!",
+                slides: ['public/ss1.png', 'public/ss2.png', 'public/ss4.jpg'],
+                currentSlideIndex: 0,
+                totalImpact: { co2Saved: 0, plasticReduced: 0 },
+                challenges: [
+                    { id: 1, title: "No Plastic Week", description: "Avoid single-use plastic for a week", progress: 30, joined: false },
+                    { id: 2, title: "Energy Saving", description: "Reduce energy consumption by 20%", progress: 50, joined: false },
+                    { id: 3, title: "Zero Waste", description: "Go zero waste for 30 days", progress: 10, joined: false }
+                ],
+                communityImpact: { treesPlanted: 1000, co2Saved: 5000, plasticReduced: 2000 },
+                showPassword: false,
+                showConfirmPassword: false,
+                errorPopup: {
+                    visible: false,
+                    title: '',
+                    message: ''
+                },
+                selectedProduct: null, // Store the currently selected product
+                categories: [
+                    { name: 'Home & Living', image: 'public/home.jpg' },
+                    { name: 'Beauty & Care', image: 'public/beauty.jpg' },
+                    { name: 'Fashion', image: 'public/fashion.jpg' },
+                    { name: 'Garden', image: 'public/garden.jpg' }
+                ],
+                specialOffers: [
+                    { code: 'FIRST20', discount: '20% OFF', description: 'New Customer Special' },
+                    { code: 'FREESHIP50', discount: 'Free', description: 'Free Shipping on orders over $50' },
+                    { code: 'BUNDLE10', discount: '10% OFF', description: 'Bundle & Save' }
+                ],
+                compareList: [], // Added for product comparison
+                newReview: { comment: '', rating: 0 } // New review data
+            },
+            computed: {
+                cartItemCount() {
+                    return this.cart.length;
+                },
+                subtotal() {
+                    return this.cart.reduce((sum, item) => sum + item.price, 0).toFixed(2);
+                },
+                totalPrice() {
+                    return this.subtotal; // Add tax/shipping if needed
+                },
+                currentSlide() {
+                    return this.slides[this.currentSlideIndex];
+                }
+            },
+            methods: {
+                showPage(page) {
+                    this.currentPage = page;
+                    this.sidebarOpen = false;
+                },
+                toggleSidebar() {
+                    this.sidebarOpen = !this.sidebarOpen;
+                },
+                toggleChatbot() {
+                    this.chatbotOpen = !this.chatbotOpen;
+                },
+                sendChatMessage() {
+                    if (!this.chatMessage.trim()) return;
+
+                    // Add user message
+                    this.chatMessages.push({
+                        sender: 'user',
+                        text: this.chatMessage
+                    });
+
+                    // Process the message and generate a bot response
+                    const response = this.generateBotResponse(this.chatMessage);
+                    
+                    // Add bot response
+                    this.chatMessages.push({
+                        sender: 'bot',
+                        text: response
+                    });
+
+                    // Clear user input
+                    this.chatMessage = '';
+                },
+                generateBotResponse(message) {
+                    const lowerMsg = message.toLowerCase();
+                    
+                    // Eco-friendly topics responses
+                    if (lowerMsg.includes('hi') || lowerMsg.includes('hello')) {
+                        return "Hello! I'm your Eco Assistant. Ask me about sustainability, recycling, or eco-friendly products!";
+                    } else if (lowerMsg.includes('recycle')) {
+                        return "Recycling is great! Remember to clean items before recycling and check your local guidelines for what can be recycled.";
+                    } else if (lowerMsg.includes('plastic')) {
+                        return "Reducing plastic use is important. Try using reusable bags, bottles, and containers to cut down on single-use plastics.";
+                    } else if (lowerMsg.includes('energy') || lowerMsg.includes('save energy')) {
+                        return "You can save energy by turning off lights when not in use, using LED bulbs, and unplugging devices when they're fully charged.";
+                    } else if (lowerMsg.includes('product') || lowerMsg.includes('eco-friendly')) {
+                        return "Our eco-friendly products are marked with sustainability ratings. Look for items with 4-5 star ratings for the most sustainable options!";
+                    } else if (lowerMsg.includes('challenge') || lowerMsg.includes('eco challenge')) {
+                        return "Check out our Eco-Challenges page to join community sustainability efforts and track your progress!";
+                    } else if (lowerMsg.includes('thank')) {
+                        return "You're welcome! Let me know if you have any other questions about sustainable living.";
+                    } else {
+                        return "I'm your Eco Assistant. I can help with questions about sustainability, recycling, and eco-friendly products. Try asking about those topics!";
+                    }
+                },
+                closeWelcomePopup() {
+                    this.showWelcomePopup = false;
+                    localStorage.setItem('hasSeenWelcome', 'true');
+                },
+                closeErrorPopup() {
+                    this.errorPopup.visible = false;
+                    this.errorPopup.title = '';
+                    this.errorPopup.message = '';
+                },
+                checkAuth() {
+                    const token = localStorage.getItem('authToken');
+                    if (token) {
+                        // Simulate API call
+                        setTimeout(() => {
+                            this.currentUser = {
+                                username: 'EcoUser',
+                                email: 'user@example.com',
+                                id: '123'
+                            };
+                        }, 300);
+                    } else {
+                        if (!localStorage.getItem('hasSeenWelcome')) {
+                            this.showWelcomePopup = true;
+                        }
+                    }
+                },
+                showCustomAlert(type, message) {
+                    const alertBox = document.createElement('div');
+                    alertBox.className = `custom-alert ${type}`;
+                    alertBox.innerHTML = `
+                        <i class="fas fa-info-circle"></i>
+                        <span>${message}</span>
+                    `;
+                    document.body.appendChild(alertBox);
+
+                    setTimeout(() => {
+                        alertBox.remove();
+                    }, 5000);
+                },
+                async login() {
+                    if (!this.loginForm.email || !this.loginForm.password) {
+                        this.showCustomAlert('error', 'Please fill in all fields.');
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch('http://localhost:5000/api/login', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                email: this.loginForm.email,
+                                password: this.loginForm.password,
+                            }),
+                        });
+
+                        const data = await response.json();
+
+                        if (!response.ok) {
+                            this.showCustomAlert('error', data.message || "Login failed. Please try again.");
+                            return;
+                        }
+
+                        this.showCustomAlert('success', "Login successful! Welcome back.");
+                        this.currentUser = {
+                            username: `${data.user.firstName} ${data.user.lastName}`,
+                            email: data.user.email,
+                        };
+                        this.loginForm = { email: '', password: '' };
+                        this.showPage('home');
+                    } catch (error) {
+                        console.error("Error during login:", error);
+                        this.showCustomAlert('error', "An error occurred. Please try again.");
+                    }
+                },
+                async register() {
+                    if (!this.registerForm.username || !this.registerForm.email || !this.registerForm.password || !this.registerForm.confirmPassword) {
+                        this.showCustomAlert('error', "Please fill in all fields.");
+                        return;
+                    }
+
+                    if (this.registerForm.password !== this.registerForm.confirmPassword) {
+                        this.showCustomAlert('error', "Passwords do not match.");
+                        return;
+                    }
+
+                    // Split username into firstName and lastName
+                    const [firstName, ...lastNameParts] = this.registerForm.username.split(' ');
+                    const lastName = lastNameParts.join(' ');
+
+                    try {
+                        const response = await fetch('http://localhost:5000/api/register', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                firstName,
+                                lastName,
+                                email: this.registerForm.email,
+                                password: this.registerForm.password,
+                            }),
+                        });
+
+                        const data = await response.json();
+
+                        if (!response.ok) {
+                            this.showCustomAlert('error', data.message || "Signup failed. Please try again.");
+                            return;
+                        }
+
+                        this.showCustomAlert('success', "Registration successful! You can now log in.");
+                        this.registerForm = { username: '', email: '', password: '', confirmPassword: '' };
+                        this.showPage('login');
+                    } catch (error) {
+                        console.error("Error during sign up:", error);
+                        this.showCustomAlert('error', "An error occurred. Please try again.");
+                    }
+                },
+                logout() {
+                    localStorage.removeItem('authToken');
+                    this.currentUser = null;
+                    this.cart = [];
+                    this.accountSidebarOpen = false; // Close the sidebar
+                    this.showCustomAlert('info', "You have been logged out.");
+                },
+                updateImpact(product, isRemoval = false) {
+                    if (isRemoval) {
+                        this.totalImpact.co2Saved -= product.co2Saved || 0;
+                        this.totalImpact.plasticReduced -= product.plasticReduced || 0;
+                    } else {
+                        this.totalImpact.co2Saved += product.co2Saved || 0;
+                        this.totalImpact.plasticReduced += product.plasticReduced || 0;
+                    }
+                },
+                canAddToCart(product) {
+                    return product.availableInventory > this.cartCount(product.id);
+                },
+                cartCount(id) {
+                    return this.cart.filter(item => item.id === id).length;
+                },
+                getStockStatus(product) {
+                    const available = product.availableInventory - this.cartCount(product.id);
+                    if (available === 0) return "Out of stock";
+                    if (available < 5) return `Only ${available} left`;
+                    return "In stock";
+                },
+                getAddToCartText(product) {
+                    return this.canAddToCart(product) ? "Add to cart" : "Out of stock";
+                },
+                addToCart(product) {
+                    if (this.canAddToCart(product)) {
+                        this.cart.push(product);
+                        this.updateImpact(product);
+                        this.showCustomAlert('success', `${product.title} added to cart.`);
+                    } else {
+                        this.showCustomAlert('error', "Not enough stock to add this product.");
+                    }
+                },
+                addToCompare(product) {
+                    if (this.compareList.length >= 3) {
+                        this.showCustomAlert('error', 'You can only compare up to 3 products.');
+                        return;
+                    }
+                    if (!this.compareList.includes(product)) {
+                        this.compareList.push(product);
+                        this.showCustomAlert('success', `${product.title} added to comparison.`);
+                    } else {
+                        this.showCustomAlert('warning', `${product.title} is already in the comparison list.`);
+                    }
+                },
+                clearComparison() {
+                    this.compareList = [];
+                    this.showCustomAlert('info', 'Comparison list cleared.');
+                },
+                toggleChallenge(id) {
+                    const challenge = this.challenges.find(c => c.id === id);
+                    if (challenge) {
+                        challenge.joined = !challenge.joined;
+                        challenge.progress += challenge.joined ? 10 : -10;
+                    }
+                },
+                nextSlide() {
+                    this.currentSlideIndex = (this.currentSlideIndex + 1) % this.slides.length;
+                },
+                prevSlide() {
+                    this.currentSlideIndex = (this.currentSlideIndex - 1 + this.slides.length) % this.slides.length;
+                },
+                goToProductPage(product) {
+                    this.selectedProduct = product;
+                    this.currentPage = 'product-detail';
+                    window.scrollTo(0, 0); // Scroll to the top of the page
+                },
+                async submitOrder() {
+                    const orderData = {
+                        items: this.cart,
+                        shippingInfo: this.order,
+                        paymentMethod: this.paymentMethod,
+                        total: this.calculateTotal()
+                    };
+
+                    try {
+                        const response = await fetch('http://localhost:5000/api/Orders', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(orderData)
+                        });
+
+                        const data = await response.json();
+
+                        console.log('Response data:', data); // Log the response for debugging
+
+                        if (response.ok && data.success) {
+                            // Display confirmation message
+                            this.showCustomAlert('success', 'Order submitted successfully!');
+                            this.confirmationMessage = 'Order submitted successfully!';
+                            alert(this.confirmationMessage); // Optional: Show an alert as well
+
+                            // Clear the cart and reset the form
+                            this.cart = [];
+                            this.currentPage = 'home'; // Redirect to home page
+                            this.order = { firstName: '', lastName: '', address: '', city: '', zip: '' };
+                            this.paymentMethod = '';
+                        } else {
+                            // Handle server-side errors
+                            this.showCustomAlert('error', 'Failed to submit order: ' + (data.message || 'Unknown error'));
+                        }
+                    } catch (error) {
+                        console.error('Error submitting order:', error);
+                        this.showCustomAlert('error', 'An error occurred while submitting the order. Please try again.');
+                    }
+                },
+                submitCheckout() {
+                    console.log('Shipping:', this.shipping);
+                    console.log('Payment Method:', this.paymentMethod);
+                    if (this.paymentMethod === 'credit') {
+                        console.log('Payment Details:', this.payment);
+                    }
+                    alert('Order submitted!');
+                },
+                calculateTotal() {
+                    let total = 0;
+                    for (let product of this.cart) {
+                        total += product.price;
+                    }
+                    return total;
+                },
+                sortedProducts() {
+                    let products = [...this.products];
+                    if (this.searchQuery) {
+                        const query = this.searchQuery.toLowerCase();
+                        products = products.filter(p => 
+                            p.title.toLowerCase().includes(query) || 
+                            p.description.toLowerCase().includes(query)
+                        );
+                    }
+                    return products.sort((a, b) => {
+                        if (this.sortBy === 'price') {
+                            return this.sortDirection === 'asc' ? a.price - b.price : b.price - a.price;
+                        } else if (this.sortBy === 'sustainabilityRating') {
+                            return this.sortDirection === 'asc' ? 
+                                a.sustainabilityRating - b.sustainabilityRating : 
+                                b.sustainabilityRating - a.sustainabilityRating;
+                        } else {
+                            return this.sortDirection === 'asc' ? 
+                                a.title.localeCompare(b.title) : 
+                                b.title.localeCompare(a.title);
+                        }
+                    });
+                },
+                togglePasswordVisibility() {
+                    this.showPassword = !this.showPassword;
+                },
+                toggleConfirmPasswordVisibility() {
+                    this.showConfirmPassword = !this.showConfirmPassword;
+                },
+                showErrorPopup(title, message) {
+                    this.errorPopup.title = title;
+                    this.errorPopup.message = message;
+                    this.errorPopup.visible = true;
+                },
+                performSearch() {
+                    if (this.searchQuery.trim() !== '') {
+                        console.log(`Searching for: ${this.searchQuery}`);
+                        // Add your search logic here
+                    } else {
+                        this.showCustomAlert('warning', "Please enter a search term.");
+                    }
+                },
+                goToCheckout() {
+                    console.log('Navigating to checkout...');
+                    this.currentPage = 'checkout'; // Update this to match your routing logic
+                },
+                goToAccount() {
+                    this.accountSidebarOpen = true; // Open the sidebar
+                },
+                surpriseMe() {
+                    if (this.products.length < 3) {
+                        this.showCustomAlert('error', 'Not enough products to surprise you!');
+                        return;
+                    }
+
+                    const randomProducts = [...this.products]
+                        .sort(() => 0.5 - Math.random())
+                        .slice(0, 3);
+
+                    randomProducts.forEach(product => {
+                        if (this.canAddToCart(product)) {
+                            this.cart.push(product);
+                            this.updateImpact(product);
+                        }
+                    });
+
+                    this.showCustomAlert('success', '3 random products have been added to your cart!');
+                },
+                async submitReview(productId) {
+                    if (!this.newReview.comment.trim() || this.newReview.rating === 0) {
+                        this.showCustomAlert('error', 'Please provide a comment and a rating.');
+                        return;
+                    }
+
+                    try {
+                        const endpoint = productId 
+                            ? `http://localhost:5000/api/products/${productId}/reviews` 
+                            : `http://localhost:5000/api/general-reviews`;
+                    
+                        const response = await fetch(endpoint, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                comment: this.newReview.comment, 
+                                rating: this.newReview.rating, 
+                                username: this.currentUser?.username || 'Guest' 
+                            }),
+                        });
+
+                        const data = await response.json();
+
+                        if (response.ok) {
+                            this.showCustomAlert('success', 'Review submitted successfully.');
+                            this.newReview = { comment: '', rating: 0 }; // Reset the form
+                            this.showPage('products'); // Redirect back to products
+                        } else {
+                            this.showCustomAlert('error', data.message || 'Failed to submit review.');
+                        }
+                    } catch (error) {
+                        console.error('Error submitting review:', error);
+                        this.showCustomAlert('error', 'An error occurred while submitting the review.');
+                    }
+                },
+                goToReviewPage(productId = null) {
+                    this.selectedProduct = productId 
+                        ? this.products.find(p => p.id === productId) 
+                        : null;
+                    this.currentPage = 'review';
+                }
+            },
+            mounted() {
+                this.checkAuth();
+                setInterval(this.nextSlide, 5000);
+                
+                // Simulate recommended products
+                this.recommendedProducts = this.products.slice(0, 3);
+                
+                // Eco tips
+                const tips = [
+                    "Use a reusable water bottle to reduce plastic waste",
+                    "Turn off lights when leaving a room to save energy",
+                    "Buy in bulk to reduce packaging waste",
+                    "Compost food scraps to reduce landfill waste"
+                ];
+                setInterval(() => {
+                    this.ecoTip = tips[Math.floor(Math.random() * tips.length)];
+                }, 10000);
+            }
+        });
+    </script>
+
+</body>
+</html>
